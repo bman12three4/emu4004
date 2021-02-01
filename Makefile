@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-I.
-DEPS = #emu4004.h
-OBJ = main.o
+DEPS = 4004.h
+OBJ = main.o 4004.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
