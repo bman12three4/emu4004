@@ -3,9 +3,13 @@
 
 struct cpu_4004 * create_cpu()
 {
-	struct cpu_4004 *cpu;
+	struct cpu_4004 *cpu = malloc(sizeof(struct cpu_4004));
+	reset_cpu(cpu);
+	return cpu;
+}
 
-	cpu = malloc(sizeof(struct cpu_4004));
+void reset_cpu(struct cpu_4004* cpu)
+{
 
 	cpu->accumulator = 0;
 	cpu->cond = 0;
@@ -19,4 +23,14 @@ struct cpu_4004 * create_cpu()
 	for (int i = 0; i < 3; i++){
 		cpu->stack[i] = 0;
 	}
+
+	cpu->mem = malloc(sizeof(struct mem_4001));
+	for (int i = 0; i < 256; i++){
+		cpu->mem->rom[i] = 0;
+	}
+}
+
+void destroy_cpu(struct cpu_4004* cpu){
+	free(cpu->mem);
+	free(cpu);
 }
