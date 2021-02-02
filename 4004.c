@@ -137,14 +137,14 @@ void excecute_cpu(struct cpu_4004* cpu)
 		unsigned char regval = get_reg(opa);
 		cpu->accumulator += regval + (cpu->flags & 1);
 		cpu->flags = (cpu->accumulator & 0xf0 > 0);
-		cpu->accumulator &= 0xf0;
+		cpu->accumulator &= 0xf;
 		break;
 	}
 	case (SUB): {
 		unsigned char regval = get_reg(opa);
 		cpu->accumulator -= regval + (cpu->flags & 1);
-		cpu->flags = (cpu->accumulator & 0xf0 == 0);
-		cpu->accumulator &= 0xf0;
+		cpu->flags = (cpu->accumulator > 0);
+		cpu->accumulator &= 0xf;
 		break;
 	}
 	case (LD): {
