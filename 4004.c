@@ -161,9 +161,10 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case (BBL): {
-		cpu->pc = cpu->stack[cpu->sp--];
+		--cpu->sp;
 		if (cpu->sp > 2)
 			cpu->sp = 2;
+		cpu->pc = cpu->stack[cpu->sp];
 		cpu->accumulator = opa;
 		break;
 	}

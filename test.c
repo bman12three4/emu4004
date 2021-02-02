@@ -553,12 +553,80 @@ int test_toc(struct cpu_4004* cpu)
 
 int test_subr(struct cpu_4004* cpu)
 {
-	
+	printf("Testing subroutine instruction JMS...\n");
+	for (int addr = 0; addr < 256; addr++){
+		for (int pc = 0; pc < 252; pc++){
+			for (int sp = 0; sp < 3; sp++){
+				reset_cpu(cpu);
+				cpu->pc = pc;
+				cpu->sp = sp;
+				cpu->rom[cpu->pc] = JMS;
+				cpu->rom[cpu->pc+1] = 0;
+				cpu->rom[cpu->pc+2] = addr >> 4;
+				cpu->rom[cpu->pc+3] = addr & 0xf;
+				excecute_cpu(cpu);
+
+				if (cpu->pc != addr){
+					printf("Error in JMS: pc=%d, should be %d\n", cpu->pc, addr);
+				}
+				int newsp = (cpu->sp==0) ? 2 : cpu->sp-1;
+				if (cpu->stack[newsp] != pc+4){
+					printf("Error in JMS: sp=%d, stack[sp]=%d should be %d\n", newsp, cpu->stack[newsp], pc+4);
+				}
+				total_tests++;
+			}
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing subroutine instruction BBL...\n");
+	for (int addr = 0; addr < 256; addr++){
+		for (int sp = 0; sp < 3; sp++){
+			for (int val = 0; val < 16; val++){
+				reset_cpu(cpu);
+				cpu->sp = sp;
+				cpu->rom[cpu->pc] = BBL;
+				cpu->rom[cpu->pc+1] = val;
+				cpu->stack[cpu->sp++] = addr;
+				if (cpu->sp > 2)
+					cpu->sp = 0;
+				excecute_cpu(cpu);
+
+				if (cpu->pc != addr){
+					printf("Error in BBL: pc=%d, should be %d\n", cpu->pc, addr);
+				}
+				if (cpu->accumulator != val){
+					printf("Error in BBL: acc=%d, should be %d\n", cpu->accumulator, val);
+				}
+				total_tests++;
+			}
+		}
+	}
+	printf("Done!\n\n");
 }
 
 int test_nop(struct cpu_4004* cpu)
 {
-	
+	printf("Testing nop instruction NOP...\n");
+	for (int addr = 0; addr < 256; addr++){
+		for (int acc = 0; acc < 16; acc++){
+			reset_cpu(cpu);
+			cpu->pc = addr;
+			cpu->accumulator = acc;
+			cpu->rom[cpu->pc] = NOP;
+			cpu->rom[cpu->pc+1] = 0;
+			excecute_cpu(cpu);
+
+			if (cpu->pc != addr+2){
+				printf("Error in NOP: pc=%d, should be %d\n", cpu->pc, addr);
+			}
+			if (cpu->accumulator != acc){
+				printf("Error in NOP: acc=%d, should be %d\n", cpu->accumulator, acc);
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n\n");
 }
 
 int test_memsel(struct cpu_4004* cpu)
@@ -580,6 +648,8 @@ int test_all(struct cpu_4004* cpu)
 	test_acc(cpu);
 	test_imm(cpu);
 	test_toc(cpu);
+	test_subr(cpu);
+	test_nop(cpu);
 	printf("Done!\n");
 	printf("Total tests run: %d\n", total_tests);
 }
