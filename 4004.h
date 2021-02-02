@@ -93,3 +93,6 @@ struct cpu_4004 * create_cpu();
 void reset_cpu(struct cpu_4004*);
 void destroy_cpu(struct cpu_4004*);
 void excecute_cpu(struct cpu_4004*);
+
+#define get_reg(r) (r & 1) ? (cpu->regp[r >> 1] & 15) : ((cpu->regp[r >> 1] & (15 << 4)) >> 4);
+#define set_reg(r, v) cpu->regp[r >> 1] = (r & 1) ? ((cpu->regp[r >> 1] & 0xf0) | v) : ((cpu->regp[r >> 1] & 0x0f) | (v << 4));

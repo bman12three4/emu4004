@@ -119,16 +119,9 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case (INC): {
-		unsigned char regp_val = cpu->regp[opa >> 1];
-		if (opa & 1){
-			unsigned char val = regp_val & 0xf;
-			val++;
-			cpu->regp[opa >> 1] = (cpu->regp[opa >> 1] & 0xf0) | val;
-		} else {
-			unsigned char val = regp_val & 0xf0;
-			val++;
-			cpu->regp[opa >> 1] = (cpu->regp[opa >> 1] & 0xf) | val << 4;
-		}
+		unsigned char val = get_reg(opa);
+		val++;
+		set_reg(opa, val);
 		break;
 	}
 	case (ISZ): {
@@ -141,36 +134,27 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case (ADD): {
-		unsigned char regp = opa >> 1;
-		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
+		unsigned char regval = get_reg(opa);
 		cpu->accumulator += regval + (cpu->flags & 1);
 		cpu->flags = (cpu->accumulator & 0xf0 > 0);
 		cpu->accumulator &= 0xf0;
 		break;
 	}
 	case (SUB): {
-		unsigned char regp = opa >> 1;
-		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
+		unsigned char regval = get_reg(opa);
 		cpu->accumulator -= regval + (cpu->flags & 1);
 		cpu->flags = (cpu->accumulator & 0xf0 == 0);
 		cpu->accumulator &= 0xf0;
 		break;
 	}
 	case (LD): {
-		unsigned char regp = opa >> 1;
-		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
+		unsigned char regval = get_reg(opa);
 		cpu->accumulator = regval;
 		break;
 	}
 	case (XCH): {
-		unsigned char regp = opa >> 1;
-		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
-
-		if (opa & 1){
-			cpu->regp[regp] &= cpu->regp[regp] & 0xf0 | cpu->accumulator;
-		} else {
-			cpu->regp[regp] &= cpu->regp[regp] & 0x0f | (cpu->accumulator << 4);
-		}
+		unsigned char regval = get_reg(opa);
+		set_reg(opa, cpu->accumulator);
 		cpu->accumulator = regval;
 		break;
 	}
