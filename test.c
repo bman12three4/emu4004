@@ -411,7 +411,47 @@ int test_acc(struct cpu_4004* cpu)
 
 int test_imm(struct cpu_4004* cpu)
 {
-	
+	printf("Testing immediate instruction FIM...\n");
+	for (int pair = 0; pair < 8; pair++){
+		for (int val = 0; val < 256; val++){
+			reset_cpu(cpu);
+			cpu->rom[cpu->pc] = IDRP;
+			cpu->rom[cpu->pc+1] = (pair << 1) + FIM;
+			cpu->rom[cpu->pc+2] = val >> 4;
+			cpu->rom[cpu->pc+3] = val & 0xf;
+			excecute_cpu(cpu);
+
+			if (cpu->regp[pair] != val) {
+				printf("FIM regp=%d, should be %d\n", cpu->regp[pair], val);
+
+				printf("Error in FIM\n");
+			}
+
+			int reg0 = get_reg(2*pair);
+			int reg1 = get_reg(2*pair + 1);
+
+			if (reg0 != (val >> 4) || reg1 != (val & 0xf)){
+				printf("Macro error in FIN! Registers don't match pair.\n");
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing immediate instruction LDM...\n");
+	for (int acc = 0; acc < 16; acc++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = LDM;
+		cpu->rom[cpu->pc+1] = acc;
+		excecute_cpu(cpu);
+
+		if (cpu->accumulator != acc){
+			printf("Error in LDM: acc = %d, should be %d\n", cpu->accumulator, acc);
+		}
+		total_tests++;
+	}
+	printf("Done!\n\n");
+
 }
 
 int test_toc(struct cpu_4004* cpu)
@@ -446,6 +486,7 @@ int test_all(struct cpu_4004* cpu)
 	test_index(cpu);
 	test_index_to_acc(cpu);
 	test_acc(cpu);
+	test_imm(cpu);
 	printf("Done!\n");
 	printf("Total tests run: %d\n", total_tests);
 }

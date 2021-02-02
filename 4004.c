@@ -70,11 +70,10 @@ void excecute_cpu(struct cpu_4004* cpu)
 		switch (opa & 1) {
 		case (FIM): {
 			unsigned char reg = opa >> 1;
-			unsigned char addrh = (cpu->rom[cpu->pc++]);
-			unsigned char addrl = (cpu->rom[cpu->pc++]);
+			unsigned char datah = (cpu->rom[cpu->pc++]);
+			unsigned char datal = (cpu->rom[cpu->pc++]);
 
-			cpu->regp[reg] = cpu->rom[(addrh << 4) | addrl];
-			
+			cpu->regp[reg] = (datah << 4) | (datal & 0xf);
 			break;
 		}
 		case (SRC): {
