@@ -631,7 +631,39 @@ int test_nop(struct cpu_4004* cpu)
 
 int test_memsel(struct cpu_4004* cpu)
 {
-	
+	printf("Testing memsel instruction DCL...\n");
+
+	for (int acc = 0; acc < 16; acc++){
+		reset_cpu(cpu);
+		cpu->accumulator = acc;
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = DCL;
+		excecute_cpu(cpu);
+
+		int new_cm_ram = acc&7;
+		if (cpu->cm_ram != new_cm_ram){
+			printf("Error in DCL: cm_ram=%d, should be %d\n", cpu->cm_ram, new_cm_ram);
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing memsel instruction SRC...\n");
+	for (int addr = 0; addr < 256; addr++){
+		for (int rp = 0; rp < 8; rp++){
+			reset_cpu(cpu);
+			cpu->rom[cpu->pc] = IDRP;
+			cpu->rom[cpu->pc+1] = (rp << 1)+ SRC;
+			cpu->regp[rp] = addr;
+			excecute_cpu(cpu);
+
+			if (cpu->io_addr != addr){
+				printf("Error in SRC: io_addr=%d, should be %d\n", cpu->io_addr, addr);
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n\n");
 }
 
 int test_io_ram(struct cpu_4004* cpu)
@@ -650,6 +682,7 @@ int test_all(struct cpu_4004* cpu)
 	test_toc(cpu);
 	test_subr(cpu);
 	test_nop(cpu);
+	test_memsel(cpu);
 	printf("Done!\n");
 	printf("Total tests run: %d\n", total_tests);
 }
