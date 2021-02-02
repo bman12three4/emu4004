@@ -454,9 +454,101 @@ int test_imm(struct cpu_4004* cpu)
 
 }
 
+int test_jcn(struct cpu_4004* cpu, int addr, int cond, int acc, int carry, int test){
+	reset_cpu(cpu);
+	cpu->rom[cpu->pc] = JCN;
+	cpu->rom[cpu->pc+1] = cond;
+	cpu->rom[cpu->pc+2] = addr >> 4;
+	cpu->rom[cpu->pc+3] = addr & 0xf;
+	cpu->accumulator = acc;
+	cpu->flags = carry;
+	cpu->test = test;
+	excecute_cpu(cpu);
+
+	int jump = (((~cond)&8) && (((acc == 0) && cond&4) || ((carry == 1) && cond&2) || (((~test)&1) && cond&1)) ||
+		(cond&8) && (((acc != 0) && cond&4) || ((carry == 0) && cond&2) || ((test&1) && cond&1)));
+
+	if (jump && (cpu->pc != addr)) {
+		printf("Error in JCN: Failed to jump = %d cond=%d test=%d acc=%d flags=%d addr=%d\n", jump, cond, test, acc, carry, addr);
+	} else if ((!jump && cpu->pc == addr) && addr != 2){
+		printf("Error in JCN: incorrect jump = %d cond=%d test=%d acc=%d flags=%d addr=%d\n", jump, cond, test, acc, carry, addr);
+	}
+
+	total_tests++;
+}
+
 int test_toc(struct cpu_4004* cpu)
 {
-	
+	printf("Testing transfer of control function JUN...\n");
+	for (int addr = 0; addr < 1 << 8; addr++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = JUN;
+		cpu->rom[cpu->pc+1] = 0;
+		cpu->rom[cpu->pc+2] = addr >> 4;
+		cpu->rom[cpu->pc+3] = addr & 0xf;
+		excecute_cpu(cpu);
+
+		if (cpu->pc != addr){
+			printf("Error in JUN: pc = %d, should be %d", cpu->pc, addr);
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing transfer of control function JIN...\n");
+	for (int regp = 0; regp < 8; regp++){
+		for (int addr = 0; addr < 1 << 8; addr++){
+			reset_cpu(cpu);
+			cpu->rom[cpu->pc] = INDR;
+			cpu->rom[cpu->pc+1] = (regp << 1) + JIN;
+			cpu->regp[regp] = addr;
+			excecute_cpu(cpu);
+
+			if (cpu->pc != addr){
+				printf("Error in JIN: pc = %d, should be %d", cpu->pc, addr);
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing transfer of control function JCN...\n");
+	for (int cond = 0; cond < 1 << 4; cond++){
+		for (int addr = 0; addr < 1 << 8; addr++){
+			for (int acc = 0; acc < 1 << 4; acc++){
+				for (int carry = 0; carry < 1 << 1; carry++){
+					for (int test = 0; test < 1 << 1; test++){
+						test_jcn(cpu, addr, cond, acc, carry, test);
+					}
+				}
+			}
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing transfer of control function ISZ...\n");
+	for (int reg = 0 ; reg < 16; reg++){
+		for (int val = 0; val < 16; val++){
+			for (int addr = 0; addr < 256; addr++){
+				reset_cpu(cpu);
+				cpu->rom[cpu->pc] = ISZ;
+				cpu->rom[cpu->pc+1] = reg;
+				cpu->rom[cpu->pc+2] = addr >> 4;
+				cpu->rom[cpu->pc+3] = addr & 0xf;
+				set_reg(reg, val)
+				excecute_cpu(cpu);
+
+				int regval = get_reg(reg);
+				if (regval > 0 && cpu->pc != addr){
+					printf("Error in ISZ: Failed to jump. val = %d regval=%d pc=%d addr=%d\n", val, regval, cpu->pc, addr);
+				} else if(regval == 0 && (cpu->pc == addr && addr != 4)){
+					printf("Error in ISZ: Incorrect jump. val = %d regval=%d pc=%d addr=%d\n", val, regval, cpu->pc, addr);
+				}
+				total_tests++;
+			}
+		}
+	}
+	printf("Done!\n\n");
 }
 
 int test_subr(struct cpu_4004* cpu)
@@ -487,6 +579,7 @@ int test_all(struct cpu_4004* cpu)
 	test_index_to_acc(cpu);
 	test_acc(cpu);
 	test_imm(cpu);
+	test_toc(cpu);
 	printf("Done!\n");
 	printf("Total tests run: %d\n", total_tests);
 }

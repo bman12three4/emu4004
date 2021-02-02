@@ -58,8 +58,9 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case JCN: {
-		int cc = ((cpu->test << 0) | (cpu->flags << 1) | ((cpu->accumulator ? 1 : 0) << 2));
-		if ((opa & 0b111 & cc) || opa & 0b1000){
+		int jump = (((~opa)&8) && (((cpu->accumulator == 0) && opa&4) || ((cpu->flags == 1) && opa&2) || (((~cpu->test)&1) && opa&1)) ||
+		(opa&8) && (((cpu->accumulator != 0) && opa&4) || ((cpu->flags == 0) && opa&2) || ((cpu->test&1) && opa&1)));
+		if (jump){
 			unsigned char addrh = (cpu->rom[cpu->pc++]);
 			unsigned char addrl = (cpu->rom[cpu->pc++]);
 			cpu->pc = (addrh << 4) | addrl;
@@ -127,8 +128,10 @@ void excecute_cpu(struct cpu_4004* cpu)
 		unsigned char addrh = (cpu->rom[cpu->pc++]);
 		unsigned char addrl = (cpu->rom[cpu->pc++]);
 
-		unsigned char regp = opa >> 1;
-		if (cpu->regp[regp]+=(1 + (opa & 1) * 15))
+		int val = get_reg(opa);
+		val = (val+1) & 0xf;
+		set_reg(opa, val);
+		if (val)
 			cpu->pc = (addrh << 4) | addrl;
 		break;
 	}
