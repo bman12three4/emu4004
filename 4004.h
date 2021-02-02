@@ -3,7 +3,7 @@ struct mem_4001 {
 };
 
 struct mem_4002 {
-
+	unsigned char ram[4][16];
 };
 
 struct cpu_4004 {
@@ -14,6 +14,11 @@ struct cpu_4004 {
 	unsigned short stack[3];
 	unsigned char sp;
 
+	unsigned char io_addr;
+	unsigned char cm_ram;
+	unsigned char ram_main[4][256];	// only 2 ram chips, could have up to 4
+	unsigned char ram_stat[4][4];
+
 	unsigned char rom[256];
 
 	unsigned char test;
@@ -22,10 +27,8 @@ struct cpu_4004 {
 enum OPCODE {
 	NOP,
 	JCN,
-	FIM,
-	SRC,
-	FIN,
-	JIN,
+	IDRP,
+	INDR,
 	JUN,
 	JMS,
 	INC,
@@ -36,9 +39,25 @@ enum OPCODE {
 	XCH,
 	BBL,
 	LDM,
+	IO,
+	ALU,
+};
+
+enum INDR_OPCODE {
+	FIN,
+	JIN,
+};
+
+enum IDRP_OPCODE {
+	FIM,
+	SRC,
+};
+
+enum IO_OPCODE {
 	WRM,
 	WMP,
 	WRR,
+	WPM,
 	WR0,
 	WR1,
 	WR2,
@@ -51,6 +70,9 @@ enum OPCODE {
 	RD1,
 	RD2,
 	RD3,
+};
+
+enum ALU_OPCODE {
 	CLB,
 	CLC,
 	IAC,
