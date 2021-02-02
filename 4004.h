@@ -85,7 +85,7 @@ enum ALU_OPCODE {
 	TCS,
 	STC,
 	DAA,
-	KPB,
+	KBP,
 	DCL,
 };
 

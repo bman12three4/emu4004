@@ -198,7 +198,215 @@ int test_acc(struct cpu_4004* cpu)
 	printf("Done!\n");
 
 	printf("Testing accumulator instruction IAC...\n");
+	for (int acc = 0; acc < 16; acc++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = IAC;
+		cpu->accumulator = acc;
+		excecute_cpu(cpu);
 
+		if (cpu->accumulator != ((acc+1) & 0xf)){
+			printf("Error in IAC: acc = %d, should be %d\n", cpu->accumulator, ((acc+1) & 0xf));
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction CMC...\n");
+	for (int carry = 0; carry < 2; carry++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = CMC;
+		cpu->flags = carry;
+		excecute_cpu(cpu);
+
+		if (cpu->flags == carry) {
+			printf("Error in CMC: carry = %d, should be %d\n", cpu->flags, (~carry) & 1);
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction CMA...\n");
+	for (int acc = 0; acc < 16; acc++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = CMA;
+		cpu->accumulator = acc;
+		excecute_cpu(cpu);
+
+		if (cpu->accumulator != ((~acc) & 0xf)){
+			printf("Error in CMA: acc = %d, should be %d\n", cpu->accumulator, ((~acc) & 0xf));
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction RAL...\n");
+	for (int acc = 0; acc < 16; acc++){
+		for (int carry = 0; carry < 2; carry++){
+			reset_cpu(cpu);
+			cpu->rom[cpu->pc] = ALU;
+			cpu->rom[cpu->pc+1] = RAL;
+			cpu->accumulator = acc;
+			cpu->flags = carry;
+			excecute_cpu(cpu);
+
+			int new_carry = (acc >> 3) & 1;
+			int new_acc = ((acc << 1) + carry) & 0xf;
+			if (cpu->accumulator != new_acc || cpu->flags != new_carry) {
+				printf("Error in RAL: acc = %d should be %d, carry = %d, should be %d\n", cpu->accumulator, new_acc, cpu->flags, new_carry);
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction RAR...\n");
+	for (int acc = 0; acc < 16; acc++){
+		for (int carry = 0; carry < 2; carry++){
+			reset_cpu(cpu);
+			cpu->rom[cpu->pc] = ALU;
+			cpu->rom[cpu->pc+1] = RAR;
+			cpu->accumulator = acc;
+			cpu->flags = carry;
+			excecute_cpu(cpu);
+
+			int new_carry = acc & 1;
+			int new_acc = ((acc >> 1) + (carry << 3)) & 0xf;
+			if (cpu->accumulator != new_acc || cpu->flags != new_carry) {
+				printf("Error in RAR: acc = %d should be %d, carry = %d, should be %d\n", cpu->accumulator, new_acc, cpu->flags, new_carry);
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction TCC...\n");
+	for (int carry = 0; carry < 2; carry++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = TCC;
+		cpu->flags = carry;
+		excecute_cpu(cpu);
+
+		if (cpu->accumulator != carry) {
+			printf("Error in TCC: acc = %d, should be %d\n", cpu->accumulator, carry);
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction DAC...\n");
+	for (int acc = 0; acc < 16; acc++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = DAC;
+		cpu->accumulator = acc;
+		excecute_cpu(cpu);
+
+		if (cpu->accumulator != ((acc-1) & 0xf) || cpu->flags != (acc > 0)){
+			printf("Error in DAC: acc = %d, should be %d, carry = %d, should be %d\n", cpu->accumulator, ((acc-1) & 0xf), cpu->flags, (acc > 1));
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction TCS...\n");
+	for (int carry = 0; carry < 2; carry++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = TCS;
+		cpu->flags = carry;
+		excecute_cpu(cpu);
+
+		if ((carry == 0 && cpu->accumulator != 9) || (carry == 1 && cpu->accumulator != 10)){
+			printf("Error in TCS: acc = %d, should be %d\n", cpu->accumulator, (carry) ? 10 : 9);
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction STC...\n");
+	for (int carry = 0; carry < 2; carry++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = STC;
+		cpu->flags = carry;
+		excecute_cpu(cpu);
+
+		if (cpu->flags != 1){
+			printf("Error in STC: carry = %d, should be 1\n", cpu->flags);
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction DAA...\n");
+	for (int acc = 0; acc < 16; acc++){
+		for (int carry = 0; carry < 2; carry++){
+			reset_cpu(cpu);
+			cpu->rom[cpu->pc] = ALU;
+			cpu->rom[cpu->pc+1] = DAA;
+			cpu->accumulator = acc;
+			cpu->flags = carry;
+			excecute_cpu(cpu);
+
+			if (acc > 9 || carry > 0){
+				if (cpu->accumulator != ((acc+6) & 0xf)){
+					printf("Error in DAA: acc = %d, should be %d\n", cpu->accumulator, ((acc+6) & 0xf));
+				}
+				if (cpu->flags == 0 && acc+6 > 15){
+					printf("Error in DAA: carry = %d, should be 1", cpu->flags);
+				}
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction KBP...\n");
+	for (int acc = 0; acc < 16; acc++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = KBP;
+		cpu->accumulator = acc;
+		excecute_cpu(cpu);
+
+		switch (acc){
+		case (0):
+			if (cpu->accumulator != 0){
+				printf("Error in KBP: acc = %d, should be %d\n", cpu->accumulator, 0);
+			}
+			break;
+		case (1):
+			if (cpu->accumulator != 1){
+				printf("Error in KBP: acc = %d, should be %d\n", cpu->accumulator, 1);
+			}
+			break;
+		case (2):
+			if (cpu->accumulator != 2){
+				printf("Error in KBP: acc = %d, should be %d\n", cpu->accumulator, 2);
+			}
+			break;
+		case (4):
+			if (cpu->accumulator != 3){
+				printf("Error in KBP: acc = %d, should be %d\n", cpu->accumulator,3);
+			}
+			break;
+		case (8):
+			if (cpu->accumulator != 4){
+				printf("Error in KBP: acc = %d, should be %d\n", cpu->accumulator, 4);
+			}
+			break;
+		default:
+			if (cpu->accumulator != 0xf){
+				printf("Error in KBP: acc = %d, should be %d\n", cpu->accumulator, 0xf);
+			}
+		}
+		total_tests++;
+	}
+	printf("Done!\n\n");
 }
 
 int test_imm(struct cpu_4004* cpu)

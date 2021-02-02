@@ -276,12 +276,12 @@ void excecute_cpu(struct cpu_4004* cpu)
 		case (RAL): {
 			cpu->accumulator <<= 1;
 			cpu->accumulator |= cpu->flags;
+			cpu->flags = (cpu->accumulator > 15);
 			cpu->accumulator &= 0xf;
-			cpu->flags = (cpu->accumulator & 0xf0);
 			break;
 		}
 		case (RAR): {
-			cpu->accumulator |= cpu->flags << 5;
+			cpu->accumulator |= cpu->flags << 4;
 			cpu->flags = cpu->accumulator & 1;
 			cpu->accumulator >>= 1;
 			break;
@@ -293,7 +293,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		}
 		case (DAC): {
 			cpu->flags = (cpu->accumulator) ? 1 : 0;
-			cpu->accumulator--;
+			cpu->accumulator = (cpu->accumulator-1) & 0xf;
 			break;
 		}
 		case (TCS): {
@@ -312,8 +312,9 @@ void excecute_cpu(struct cpu_4004* cpu)
 				}
 				cpu->accumulator &= 0xf;
 			}
+			break;
 		}
-		case (KPB): {
+		case (KBP): {
 			switch (cpu->accumulator){
 			case 0:
 				break;
