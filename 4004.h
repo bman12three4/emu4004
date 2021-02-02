@@ -16,7 +16,7 @@ struct cpu_4004 {
 
 	unsigned char io_addr;
 	unsigned char cm_ram;
-	unsigned char ram_main[4][256];	// only 2 ram chips, could have up to 4
+	unsigned char ram_main[4][16];	// only 2 ram chips, could have up to 4
 	unsigned char ram_stat[4][4];
 
 	unsigned char rom[256];
