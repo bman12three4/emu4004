@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-I. -g
+CFLAGS=-I. -g -std=c99
 DEPS = 4004.h
 OBJ = main.o 4004.o
 
