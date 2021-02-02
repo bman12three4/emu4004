@@ -1,10 +1,5 @@
 instructions to implement:
 	SRC,
-	ADD,
-	SUB,
-	LD,
-	XCH,
-	BBL,
 	LDM,
 	WRM,
 	WMP,
@@ -35,3 +30,6 @@ instructions to implement:
 	DAA,
 	KPB,
 	DCL,
+
+need to check on SUB, well really you should check all of them,
+you might even consider writing tests for them??

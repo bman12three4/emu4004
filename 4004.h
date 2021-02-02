@@ -8,7 +8,7 @@ struct mem_4002 {
 
 struct cpu_4004 {
 	unsigned char accumulator;
-	unsigned char cond;
+	unsigned char flags;
 	unsigned char regp[8];
 	unsigned short pc;
 	unsigned short stack[3];

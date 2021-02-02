@@ -13,7 +13,7 @@ void reset_cpu(struct cpu_4004* cpu)
 {
 
 	cpu->accumulator = 0;
-	cpu->cond = 0;
+	cpu->flags = 0;
 
 	for (int i = 0; i < 8; i++){
 		cpu->regp[i] = 0;
@@ -39,15 +39,15 @@ void destroy_cpu(struct cpu_4004* cpu)
 
 void excecute_cpu(struct cpu_4004* cpu)
 {
-	unsigned char opr = cpu->rom[cpu->pc++];
-	unsigned char opa = cpu->rom[cpu->pc++];
+	unsigned char opr = cpu->rom[cpu->pc++] & 0xf;
+	unsigned char opa = cpu->rom[cpu->pc++] & 0xf;
 
 	switch (opr){
 	case NOP: {
 		break;
 	}
 	case JCN: {
-		int cc = ((cpu->test << 0) | (cpu->cond << 1) | ((cpu->accumulator ? 1 : 0) << 2));
+		int cc = ((cpu->test << 0) | (cpu->flags << 1) | ((cpu->accumulator ? 1 : 0) << 2));
 		if ((opa & 0b111 & cc) || opa & 0b1000){
 			unsigned char addrh = (cpu->rom[cpu->pc++]);
 			unsigned char addrl = (cpu->rom[cpu->pc++]);
@@ -108,8 +108,49 @@ void excecute_cpu(struct cpu_4004* cpu)
 		if (cpu->regp[regp]+=(1 + (opa & 1) * 15))
 			cpu->pc = (addrh << 4) | addrl;
 		break;
+	}
+	case (ADD): {
+		unsigned char regp = opa >> 1;
+		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
+		cpu->accumulator += regval + (cpu->flags & 1);
+		cpu->flags = (cpu->accumulator & 0xf0 > 0);
+		cpu->accumulator &= 0xf0;
+		break;
+	}
+	case (SUB): {
+		unsigned char regp = opa >> 1;
+		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
+		cpu->accumulator -= regval + (cpu->flags & 1);
+		cpu->flags = (cpu->accumulator & 0xf0 == 0);
+		cpu->accumulator &= 0xf0;
+		break;
+	}
+	case (LD): {
+		unsigned char regp = opa >> 1;
+		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
+		cpu->accumulator = regval;
+		break;
+	}
+	case (XCH): {
+		unsigned char regp = opa >> 1;
+		unsigned char regval = (opa & 1) ? (cpu->regp[regp] & 15) : (cpu->regp[regp] & (15 << 4)) >> 4;
 
-
+		if (opa & 1){
+			cpu->regp[regp] &= cpu->regp[regp] & 0xf0 | cpu->accumulator;
+		} else {
+			cpu->regp[regp] &= cpu->regp[regp] & 0x0f | (cpu->accumulator << 4);
+		}
+		cpu->accumulator = regval;
+		break;
+	}
+	case (BBL): {
+		cpu->pc = cpu->stack[cpu->sp--];
+		cpu->accumulator = opa;
+		break;
+	}
+	case (LDM): {
+		cpu->accumulator = opa;
+		break;
 	}
 	}
 }
