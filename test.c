@@ -82,6 +82,10 @@ int test_index_to_acc(struct cpu_4004* cpu)
 					cpu->flags = carry;
 					excecute_cpu(cpu);
 
+					if (((val + acc + carry) > 15 && cpu->flags == 0) || ((val + acc + carry) < 15 && cpu->flags == 1)) {
+						printf("Error in ADD: carry flag incorrect\n");
+					}
+
 					if (cpu->accumulator != ((val + acc + carry) & 0xf)){
 						printf("Error in ADD: acc = %d, should be %d\n", cpu->accumulator, ((val + acc + carry) & 0xf));
 					}
@@ -104,6 +108,10 @@ int test_index_to_acc(struct cpu_4004* cpu)
 					set_reg(reg, val);
 					cpu->flags = carry;
 					excecute_cpu(cpu);
+
+					if (((acc - val - carry) < 0 && cpu->flags == 0) || (((acc - val - carry) > 0 && cpu->flags == 1))){
+						printf("Error in SUB: carry flag incorrect.\n");
+					}
 
 					if (cpu->accumulator != ((acc - val - carry) & 0xf)) {
 						printf("Error in SUB: acc = %d, should be %d\n", cpu->accumulator, ((acc - val - carry) & 0xf));
@@ -145,7 +153,7 @@ int test_index_to_acc(struct cpu_4004* cpu)
 
 				int regval = get_reg(reg);
 				if (cpu->accumulator != val || regval != acc){
-					printf("Error in LD: acc = %d, should be %d, regval = %d, should be %d\n", cpu->accumulator, val, regval, acc);
+					printf("Error in XCH: acc = %d, should be %d, regval = %d, should be %d\n", cpu->accumulator, val, regval, acc);
 				}
 				total_tests++;
 			}
@@ -156,6 +164,40 @@ int test_index_to_acc(struct cpu_4004* cpu)
 
 int test_acc(struct cpu_4004* cpu)
 {
+	printf("Testing accumulator instruction CLB...\n");
+	for (int acc = 0; acc < 16; acc++){
+		for (int carry = 0; carry < 2; carry++){
+			reset_cpu(cpu);
+			cpu->rom[cpu->pc] = ALU;
+			cpu->rom[cpu->pc+1] = CLB;
+			cpu->accumulator = acc;
+			cpu->flags = carry;
+			excecute_cpu(cpu);
+
+			if (cpu->accumulator || cpu->flags) {
+				printf("Error in CLB: acc = %d, should be 0, carry = %d, should be 0\n", cpu->accumulator, cpu->flags);
+			}
+			total_tests++;
+		}
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction CLC...\n");
+	for (int carry = 0; carry < 2; carry++){
+		reset_cpu(cpu);
+		cpu->rom[cpu->pc] = ALU;
+		cpu->rom[cpu->pc+1] = CLC;
+		cpu->flags = carry;
+		excecute_cpu(cpu);
+
+		if (cpu->flags) {
+			printf("Error in CLC: carry = %d, should be 0\n", cpu->flags);
+		}
+		total_tests++;
+	}
+	printf("Done!\n");
+
+	printf("Testing accumulator instruction IAC...\n");
 
 }
 
@@ -195,6 +237,7 @@ int test_all(struct cpu_4004* cpu)
 	test_macros(cpu);
 	test_index(cpu);
 	test_index_to_acc(cpu);
+	test_acc(cpu);
 	printf("Done!\n");
 	printf("Total tests run: %d\n", total_tests);
 }
