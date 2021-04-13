@@ -2,45 +2,21 @@
 #include <stdio.h>
 #include "4004.h"
 
+unsigned char read_rom(struct cpu_4004* cpu, unsigned short addr);
+unsigned char read_ram(struct cpu_4004* cpu, unsigned short addr);
+void write_ram(struct cpu_4004* cpu, unsigned short addr, unsigned char val);
+
 struct cpu_4004 * create_cpu()
 {
 	struct cpu_4004 *cpu = malloc(sizeof(struct cpu_4004));
-	reset_cpu(cpu);
+	cpu->rom_list = NULL;
+	cpu->ram_list = NULL;
 	return cpu;
 }
 
 void reset_cpu(struct cpu_4004* cpu)
 {
 
-	cpu->accumulator = 0;
-	cpu->flags = 0;
-
-	for (int i = 0; i < 8; i++){
-		cpu->regp[i] = 0;
-	}
-
-	cpu->pc = 0;
-
-	for (int i = 0; i < 3; i++){
-		cpu->stack[i] = 0;
-	}
-
-	cpu->sp = 0;
-	cpu->io_addr = 0;
-	cpu->cm_ram = 0;
-
-	for (int i = 0; i < 4; i++){
-		for (int j = 0; j < 256; j++){
-			cpu->ram_main[i][j] = 0;
-		}
-		for (int j = 0; j < 4; j++){
-			cpu->ram_stat[i][j] = 0;
-		}
-	}
-
-	for (int i = 0; i < 256; i++){
-		cpu->rom[i] = 0;
-	}
 }
 
 void destroy_cpu(struct cpu_4004* cpu)
@@ -48,10 +24,104 @@ void destroy_cpu(struct cpu_4004* cpu)
 	free(cpu);
 }
 
+int attach_rom(struct cpu_4004* cpu, struct rom_4001* rom, int id)
+{
+	struct rom_node* node = malloc(sizeof(struct rom_node));
+
+	node->rom = rom;
+	node->id = id;
+
+	node->next = NULL;
+
+	if (!cpu->rom_list) {
+		cpu->rom_list = node;
+	} else {
+		cpu->rom_list->next = node;
+	}
+
+}
+
+int attach_ram(struct cpu_4004* cpu, struct ram_4002* ram, int id)
+{
+	struct ram_node* node = malloc(sizeof(struct ram_node));
+
+	node->ram = ram;
+	node->id = id;
+
+	node->next = NULL;
+
+	if (!cpu->ram_list) {
+		cpu->ram_list = node;
+	} else {
+		cpu->ram_list->next = node;
+	}
+
+}
+
+unsigned char read_rom(struct cpu_4004* cpu, unsigned short addr)
+{
+	int id = (addr & 0xf00) >> 8;
+
+	struct rom_node* node = cpu->rom_list;
+	while (node->id != id) {
+		node = node->next;
+	}
+
+	return node->rom->data[addr&0xff];
+}
+
+unsigned char read_ram(struct cpu_4004* cpu, unsigned short addr)
+{
+	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
+
+	struct ram_node* node = cpu->ram_list;
+	while (node->id != id) {
+		node = node->next;
+	}
+
+	return node->ram->data[(addr & 0x30) >> 4][addr & 0xf];
+}
+
+void write_ram(struct cpu_4004* cpu, unsigned short addr, unsigned char val)
+{
+	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
+
+	struct ram_node* node = cpu->ram_list;
+	while (node->id != id) {
+		node = node->next;
+	}
+
+	node->ram->data[(addr & 0x30) >> 4][addr & 0xf] = val;
+}
+
+unsigned char read_ram_status(struct cpu_4004* cpu, unsigned short addr, int n)
+{
+	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
+
+	struct ram_node* node = cpu->ram_list;
+	while (node->id != id) {
+		node = node->next;
+	}
+
+	return node->ram->data[(addr & 0x30) >> 4][1 + n + addr & 0xf];
+}
+
+void write_ram_status(struct cpu_4004* cpu, unsigned short addr, int n, unsigned char val)
+{
+	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
+
+	struct ram_node* node = cpu->ram_list;
+	while (node->id != id) {
+		node = node->next;
+	}
+
+	node->ram->data[(addr & 0x30) >> 4][1 + n + addr & 0xf] = val;
+}
+
 void excecute_cpu(struct cpu_4004* cpu)
 {
-	unsigned char opr = cpu->rom[cpu->pc++] & 0xf;
-	unsigned char opa = cpu->rom[cpu->pc++] & 0xf;
+	unsigned char opr = read_rom(cpu, cpu->pc++);
+	unsigned char opa = read_rom(cpu, cpu->pc++);
 
 	switch (opr){
 	case NOP: {
@@ -61,8 +131,8 @@ void excecute_cpu(struct cpu_4004* cpu)
 		int jump = (((~opa)&8) && (((cpu->accumulator == 0) && opa&4) || ((cpu->flags == 1) && opa&2) || (((~cpu->test)&1) && opa&1)) ||
 		(opa&8) && (((cpu->accumulator != 0) && opa&4) || ((cpu->flags == 0) && opa&2) || ((cpu->test&1) && opa&1)));
 		if (jump){
-			unsigned char addrh = (cpu->rom[cpu->pc++]);
-			unsigned char addrl = (cpu->rom[cpu->pc++]);
+			unsigned char addrh = read_rom(cpu, cpu->pc++);
+			unsigned char addrl = read_rom(cpu, cpu->pc++);
 			cpu->pc = (addrh << 4) | addrl;
 		}
 		break;
@@ -71,8 +141,8 @@ void excecute_cpu(struct cpu_4004* cpu)
 		switch (opa & 1) {
 		case (FIM): {
 			unsigned char reg = opa >> 1;
-			unsigned char datah = (cpu->rom[cpu->pc++]);
-			unsigned char datal = (cpu->rom[cpu->pc++]);
+			unsigned char datah = read_rom(cpu, cpu->pc++);
+			unsigned char datal = read_rom(cpu, cpu->pc++);
 
 			cpu->regp[reg] = (datah << 4) | (datal & 0xf);
 			break;
@@ -87,7 +157,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 	case (INDR): {
 		switch (opa & 1){
 		case FIN : {
-			cpu->regp[opa >> 1] = cpu->rom[cpu->regp[0]];
+			cpu->regp[opa >> 1] = read_rom(cpu, cpu->regp[0]);
 			break;
 		}
 		case JIN : {
@@ -100,8 +170,8 @@ void excecute_cpu(struct cpu_4004* cpu)
 	case (JUN): {
 		//unsigned char addrh = opa;
 		// not used since there is only 1 rom right now
-		unsigned char addrm = (cpu->rom[cpu->pc++]);
-		unsigned char addrl = (cpu->rom[cpu->pc++]);
+		unsigned char addrm = read_rom(cpu, cpu->pc++);
+		unsigned char addrl = read_rom(cpu, cpu->pc++);
 
 		cpu->pc = (addrm << 4) | addrl;
 		break;
@@ -109,8 +179,8 @@ void excecute_cpu(struct cpu_4004* cpu)
 	case (JMS): {
 		//unsigned char addrh = opa;
 		// not used since there is only 1 rom right now
-		unsigned char addrm = (cpu->rom[cpu->pc++]);
-		unsigned char addrl = (cpu->rom[cpu->pc++]);
+		unsigned char addrm = read_rom(cpu, cpu->pc++);
+		unsigned char addrl = read_rom(cpu, cpu->pc++);
 
 		cpu->stack[cpu->sp++] = cpu->pc;
 		if (cpu->sp > 2)
@@ -125,8 +195,8 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case (ISZ): {
-		unsigned char addrh = (cpu->rom[cpu->pc++]);
-		unsigned char addrl = (cpu->rom[cpu->pc++]);
+		unsigned char addrh = read_rom(cpu, cpu->pc++);
+		unsigned char addrl = read_rom(cpu, cpu->pc++);
 
 		int val = get_reg(opa);
 		val = (val+1) & 0xf;
@@ -175,7 +245,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 	case (IO): {
 		switch (opa){
 		case (WRM): {
-			cpu->ram_main[cpu->cm_ram][cpu->io_addr] = cpu->accumulator;
+			write_ram(cpu, cpu->io_addr, cpu->accumulator);
 			break;
 		}
 		case (WMP): {
@@ -191,30 +261,30 @@ void excecute_cpu(struct cpu_4004* cpu)
 			break;
 		}
 		case (WR0): {
-			cpu->ram_stat[cpu->cm_ram][0] = cpu->accumulator;
+			write_ram_status(cpu, cpu->io_addr, 0, cpu->accumulator);
 			break;
 		}
 		case (WR1): {
-			cpu->ram_stat[cpu->cm_ram][1] = cpu->accumulator;
+			write_ram_status(cpu, cpu->io_addr, 1, cpu->accumulator);
 			break;
 		}
 		case (WR2): {
-			cpu->ram_stat[cpu->cm_ram][2] = cpu->accumulator;
+			write_ram_status(cpu, cpu->io_addr, 2, cpu->accumulator);
 			break;
 		}
 		case (WR3): {
-			cpu->ram_stat[cpu->cm_ram][3] = cpu->accumulator;
+			write_ram_status(cpu, cpu->io_addr, 3, cpu->accumulator);
 			break;
 		}
 		case (SBM): {
-			unsigned char ramval = cpu->ram_main[cpu->cm_ram][cpu->io_addr];
+			unsigned char ramval = read_ram(cpu, cpu->io_addr);
 			cpu->accumulator -= ramval + (cpu->flags & 1);
 			cpu->flags = (cpu->accumulator & 0xf0 == 0);
 			cpu->accumulator &= 0xf0;
 			break;
 		}
 		case (RDM): {
-			cpu->accumulator = cpu->ram_main[cpu->cm_ram][cpu->io_addr];
+			cpu->accumulator = read_ram(cpu, cpu->io_addr);
 			break;
 		}
 		case (RDR): {
@@ -222,26 +292,26 @@ void excecute_cpu(struct cpu_4004* cpu)
 			break;
 		}
 		case (ADM): {
-			unsigned char ramval = cpu->ram_main[cpu->cm_ram][cpu->io_addr];
+			unsigned char ramval = read_ram(cpu, cpu->io_addr);
 			cpu->accumulator += ramval + (cpu->flags & 1);
 			cpu->flags = (cpu->accumulator & 0xf0 > 0);
 			cpu->accumulator &= 0xf0;
 			break;
 		}
 		case (RD0): {
-			cpu->accumulator = cpu->ram_stat[cpu->cm_ram][0];
+			cpu->accumulator = read_ram_status(cpu, cpu->io_addr, 0);
 			break;
 		}
 		case (RD1): {
-			cpu->accumulator = cpu->ram_stat[cpu->cm_ram][1];
+			cpu->accumulator = read_ram_status(cpu, cpu->io_addr, 1);
 			break;
 		}
 		case (RD2): {
-			cpu->accumulator = cpu->ram_stat[cpu->cm_ram][2];
+			cpu->accumulator = read_ram_status(cpu, cpu->io_addr, 2);
 			break;
 		}
 		case (RD3): {
-			cpu->accumulator = cpu->ram_stat[cpu->cm_ram][3];
+			cpu->accumulator = read_ram_status(cpu, cpu->io_addr, 3);
 			break;
 		}
 		}
