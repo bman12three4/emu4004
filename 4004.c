@@ -171,10 +171,12 @@ void excecute_cpu(struct cpu_4004* cpu)
 		switch (opa & 1){
 		case FIN : {
 			cpu->regp[opa >> 1] = read_rom(cpu, cpu->regp[0]);
+			printf(BLU "Fetching indirectly from register pair %dp with value 0x%X\n", opa>>1, cpu->regp[opa >> 1]);
 			break;
 		}
 		case JIN : {
 			cpu->pc = cpu->regp[opa >> 1];
+			printf(BLU "Jumping indirectly from register pair %dp with value 0x%X\n", opa >> 1, cpu->pc);
 			break;
 		}
 		}
@@ -204,6 +206,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		unsigned char val = get_reg(opa);
 		val++;
 		set_reg(opa, val);
+		printf(BLU "Incrementing register %d to 0x%X\n" reset, opa, val);
 		break;
 	}
 	case (ISZ): {
@@ -212,8 +215,11 @@ void excecute_cpu(struct cpu_4004* cpu)
 		int val = get_reg(opa);
 		val = (val+1) & 0xf;
 		set_reg(opa, val);
-		if (val)
+		printf(BLU "Incrementing register %d to 0x%X\n" reset, opa, val);
+		if (val) {
+			printf(BLU "Jumping to 0x%X\n" reset, addr);
 			cpu->pc = addr;
+		}
 		break;
 	}
 	case (ADD): {
@@ -226,6 +232,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 	}
 	case (SUB): {
 		unsigned char regval = get_reg(opa);
+		printf(BLU "Subtracting register %d with value 0x%X from accumulator\n" reset, opa, regval);
 		cpu->accumulator -= regval + (cpu->flags & 1);
 		cpu->flags = (cpu->accumulator > 16);
 		cpu->accumulator &= 0xf;
@@ -254,12 +261,14 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case (LDM): {
+		printf(BLU "Loading accumulator with 0x%X", opa);
 		cpu->accumulator = opa;
 		break;
 	}
 	case (IO): {
 		switch (opa){
 		case (WRM): {
+			printf(BLU "Writing accumulator to address 0x%X\n" reset, cpu->io_addr);
 			write_ram(cpu, cpu->io_addr, cpu->accumulator);
 			break;
 		}
@@ -293,6 +302,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		}
 		case (SBM): {
 			unsigned char ramval = read_ram(cpu, cpu->io_addr);
+			printf(BLU "Subtracting value 0x%X from location 0x%X from accumulator\n" reset, ramval, cpu->io_addr);
 			cpu->accumulator -= ramval + (cpu->flags & 1);
 			cpu->flags = (cpu->accumulator & 0xf0 == 0);
 			cpu->accumulator &= 0xf0;
@@ -300,6 +310,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		}
 		case (RDM): {
 			cpu->accumulator = read_ram(cpu, cpu->io_addr);
+			printf(BLU "Reading value 0x%X from location 0x%X into accumulator\n" reset, cpu->accumulator, cpu->io_addr);
 			break;
 		}
 		case (RDR): {
@@ -308,6 +319,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		}
 		case (ADM): {
 			unsigned char ramval = read_ram(cpu, cpu->io_addr);
+			printf(BLU "Adding value 0x%X from location 0x%X to accumulator\n" reset, ramval, cpu->io_addr);
 			cpu->accumulator += ramval + (cpu->flags & 1);
 			cpu->flags = (cpu->accumulator & 0xf0 > 0);
 			cpu->accumulator &= 0xf0;
