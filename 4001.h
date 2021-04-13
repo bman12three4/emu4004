@@ -10,6 +10,6 @@ struct rom_4001 {
 };
 
 struct rom_4001* create_rom(FILE* f);
-void destroy_rom(struct rom_4001*);
+void destroy_rom(struct rom_4001* rom);
 
 #endif

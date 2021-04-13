@@ -24,6 +24,14 @@ void destroy_cpu(struct cpu_4004* cpu)
 	free(cpu);
 }
 
+void print_cpu_info(struct cpu_4004* cpu)
+{
+	printf("A=%x, C=%x, PC=%x, PC1=%x, PC2=%x, PC3=%x\n", cpu->accumulator, cpu->flags, cpu->pc, 0, 0, 0);
+	for (int i = 0; i < 8; i++)
+		printf("RP%d=%x ", i, cpu->regp[i]);
+	printf("\n\n");
+}
+
 int attach_rom(struct cpu_4004* cpu, struct rom_4001* rom, int id)
 {
 	struct rom_node* node = malloc(sizeof(struct rom_node));
@@ -120,8 +128,11 @@ void write_ram_status(struct cpu_4004* cpu, unsigned short addr, int n, unsigned
 
 void excecute_cpu(struct cpu_4004* cpu)
 {
-	unsigned char opr = read_rom(cpu, cpu->pc++);
-	unsigned char opa = read_rom(cpu, cpu->pc++);
+	unsigned char inst = read_rom(cpu, cpu->pc++);
+	unsigned char opr = (inst & 0xf0) >> 4;
+	unsigned char opa = inst & 0xf;
+
+	printf("Instruction: %x %s\n", inst, opcode_names[inst]);
 
 	switch (opr){
 	case NOP: {
@@ -141,10 +152,9 @@ void excecute_cpu(struct cpu_4004* cpu)
 		switch (opa & 1) {
 		case (FIM): {
 			unsigned char reg = opa >> 1;
-			unsigned char datah = read_rom(cpu, cpu->pc++);
-			unsigned char datal = read_rom(cpu, cpu->pc++);
+			unsigned char data = read_rom(cpu, cpu->pc++);
 
-			cpu->regp[reg] = (datah << 4) | (datal & 0xf);
+			cpu->regp[reg] = data;
 			break;
 		}
 		case (SRC): {
@@ -170,22 +180,20 @@ void excecute_cpu(struct cpu_4004* cpu)
 	case (JUN): {
 		//unsigned char addrh = opa;
 		// not used since there is only 1 rom right now
-		unsigned char addrm = read_rom(cpu, cpu->pc++);
-		unsigned char addrl = read_rom(cpu, cpu->pc++);
+		unsigned char addr = read_rom(cpu, cpu->pc++);
 
-		cpu->pc = (addrm << 4) | addrl;
+		cpu->pc = addr;
 		break;
 	}
 	case (JMS): {
 		//unsigned char addrh = opa;
 		// not used since there is only 1 rom right now
-		unsigned char addrm = read_rom(cpu, cpu->pc++);
-		unsigned char addrl = read_rom(cpu, cpu->pc++);
+		unsigned char addr = read_rom(cpu, cpu->pc++);
 
 		cpu->stack[cpu->sp++] = cpu->pc;
 		if (cpu->sp > 2)
 			cpu->sp = 0;
-		cpu->pc = (addrm << 4) | addrl;
+		cpu->pc = addr;
 		break;
 	}
 	case (INC): {
@@ -195,14 +203,13 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case (ISZ): {
-		unsigned char addrh = read_rom(cpu, cpu->pc++);
-		unsigned char addrl = read_rom(cpu, cpu->pc++);
+		unsigned char addr = read_rom(cpu, cpu->pc++);
 
 		int val = get_reg(opa);
 		val = (val+1) & 0xf;
 		set_reg(opa, val);
 		if (val)
-			cpu->pc = (addrh << 4) | addrl;
+			cpu->pc = addr;
 		break;
 	}
 	case (ADD): {
@@ -416,5 +423,42 @@ void excecute_cpu(struct cpu_4004* cpu)
 		}
 		break;
 	}
-	}
+	} // main switch
+
+	print_cpu_info(cpu);
 }
+
+const char* opcode_names[] = {
+	"NOP", "NOP", "NOP", "NOP", "NOP", "NOP", "NOP", "NOP",
+	"NOP", "NOP", "NOP", "NOP", "NOP", "NOP", "NOP", "NOP",
+	"JCN", "JCN", "JCN", "JCN", "JCN", "JCN", "JCN", "JCN",
+	"JCN", "JCN", "JCN", "JCN", "JCN", "JCN", "JCN", "JCN",
+	"FIM", "SRC", "FIM", "SRC", "FIM", "SRC", "FIM", "SRC",
+	"FIM", "SRC", "FIM", "SRC", "FIM", "SRC", "FIM", "SRC",
+	"FIN", "JIN", "FIN", "SRC", "FIN", "SRC", "FIN", "SRC",
+	"FIN", "SRC", "FIN", "SRC", "FIN", "SRC", "FIN", "SRC",
+	"JUN", "JUN", "JUN", "JUN", "JUN", "JUN", "JUN", "JUN",
+	"JUN", "JUN", "JUN", "JUN", "JUN", "JUN", "JUN", "JUN",
+	"JMS", "JMS", "JMS", "JMS", "JMS", "JMS", "JMS", "JMS",
+	"JMS", "JMS", "JMS", "JMS", "JMS", "JMS", "JMS", "JMS",
+	"INC", "INC", "INC", "INC", "INC", "INC", "INC", "INC",
+	"INC", "INC", "INC", "INC", "INC", "INC", "INC", "INC",
+	"ISZ", "ISZ", "ISZ", "ISZ", "ISZ", "ISZ", "ISZ", "ISZ",
+	"ISZ", "ISZ", "ISZ", "ISZ", "ISZ", "ISZ", "ISZ", "ISZ",
+	"ADD", "ADD", "ADD", "ADD", "ADD", "ADD", "ADD", "ADD",
+	"ADD", "ADD", "ADD", "ADD", "ADD", "ADD", "ADD", "ADD",
+	"SUB", "SUB", "SUB", "SUB", "SUB", "SUB", "SUB", "SUB",
+	"SUB", "SUB", "SUB", "SUB", "SUB", "SUB", "SUB", "SUB",
+	"LD", "LD", "LD", "LD", "LD", "LD", "LD", "LD",
+	"LD", "LD", "LD", "LD", "LD", "LD", "LD", "LD",
+	"XCH", "XCH", "XCH", "XCH", "XCH", "XCH", "XCH", "XCH",
+	"XCH", "XCH", "XCH", "XCH", "XCH", "XCH", "XCH", "XCH",
+	"BBL", "BBL", "BBL", "BBL", "BBL", "BBL", "BBL", "BBL",
+	"BBL", "BBL", "BBL", "BBL", "BBL", "BBL", "BBL", "BBL",
+	"LDM", "LDM", "LDM", "LDM", "LDM", "LDM", "LDM", "LDM",
+	"LDM", "LDM", "LDM", "LDM", "LDM", "LDM", "LDM", "LDM",
+	"WRM", "WMP", "WRR", "WPM", "WR0", "WR1", "WR2", "WR3",
+	"SBM", "RDM", "RDR", "ADM", "RD0", "RD1", "RD2", "RD3",
+	"CLB", "CLC", "IAC", "CMC", "CMA", "RAL", "RAR", "TCC",
+	"DAC", "TCS", "STC", "DAA", "KBP", "DCL", "undefined", "undefined",
+};

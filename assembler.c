@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h>
+
 #include "assembler.h"
 
-static const char* opcodes[] = {
+static const char* opcodes[NUM_OPS] = {
 	"NOP",
 	"JCN",
 	"FIM",
@@ -49,6 +51,26 @@ static const char* opcodes[] = {
 	"DCL",
 };
 
+int is_op(char* str)
+{
+	int i;
+	for (i = 0; i < NUM_OPS; i++) {
+		if (!strcmp(str, opcodes[i]))
+			return 1;
+	}
+	return 0;
+}
+
+int handle_op(char* ops[256])
+{
+	return 0;
+}
+
+int handle_symbol(char* str)
+{
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	FILE* source;
@@ -72,8 +94,34 @@ int main(int argc, char *argv[])
 int assemble(FILE* source)
 {
 	char line[256];
+	char ops[4][256];
 
-	fgets(line, 256, source);
-	printf("%s\n", line);
+	FILE* output;
+
+	int numargs;
+	int i;
+
+	output = fopen("out.mcs4", "w");
+
+
+	while(fgets(line, 256, source)){
+		if (line[0] == ';')
+			continue;
+
+		numargs = sscanf(line, "%s %s %s %s\n", ops[0], ops[1], ops[2], ops[3]);
+		printf("Got : ");
+		for (i = 0; i < numargs; i++) {
+			if (ops[i][0] == ';')
+				break;
+			printf("%s\t", ops[i]);
+			if (is_op(ops[0])) {
+				handle_op(ops);
+			} else {
+				handle_symbol(ops[0]);
+			}
+			printf("op");
+		}
+		printf("\n");
+	}
 
 }

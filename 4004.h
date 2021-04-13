@@ -1,6 +1,9 @@
 #include "4001.h"
 #include "4002.h"
 
+#ifndef _4004_H
+#define _4004_H
+
 struct rom_node {
 	struct rom_4001* rom;
 	int id;
@@ -95,6 +98,8 @@ enum ALU_OPCODE {
 	DCL,
 };
 
+extern const char* opcode_names[];
+
 struct cpu_4004 * create_cpu();
 void reset_cpu(struct cpu_4004*);
 void destroy_cpu(struct cpu_4004*);
@@ -104,3 +109,5 @@ int attach_rom(struct cpu_4004*, struct rom_4001*, int id);
 
 #define get_reg(r) (r & 1) ? (cpu->regp[r >> 1] & 15) : ((cpu->regp[r >> 1] & (15 << 4)) >> 4);
 #define set_reg(r, v) cpu->regp[r >> 1] = (r & 1) ? ((cpu->regp[r >> 1] & 0xf0) | v) : ((cpu->regp[r >> 1] & 0x0f) | (v << 4));
+
+#endif
