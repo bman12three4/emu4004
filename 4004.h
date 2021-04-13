@@ -1,20 +1,8 @@
-#include "4001.h"
-#include "4002.h"
-
 #ifndef _4004_H
 #define _4004_H
 
-struct rom_node {
-	struct rom_4001* rom;
-	int id;
-	struct rom_node* next;
-};
-
-struct ram_node {
-	struct ram_4002* ram;
-	int id;
-	struct ram_node* next;
-};
+#define ROM 0
+#define RAM 1
 
 struct cpu_4004 {
 	unsigned char accumulator;
@@ -24,8 +12,8 @@ struct cpu_4004 {
 	unsigned short stack[3];
 	unsigned char sp;
 
-	struct rom_node* rom_list;
-	struct ram_node* ram_list;
+	struct memory_node* rom_list;
+	struct memory_node* ram_list;
 
 	unsigned char io_addr;
 	unsigned char cm_ram;
@@ -33,6 +21,14 @@ struct cpu_4004 {
 	unsigned char test;
 };
 
+struct memory_node {
+	void (*write)(struct cpu_4004* cpu, void* memory, unsigned short addr, unsigned char val);
+	unsigned char (*read)(struct cpu_4004* cpu, void* memory, unsigned short addr);
+	void (*destroy)();
+	void* device;
+	int id;
+	struct memory_node* next;
+};
 enum OPCODE {
 	NOP,
 	JCN,
@@ -105,7 +101,7 @@ void reset_cpu(struct cpu_4004*);
 void destroy_cpu(struct cpu_4004*);
 void excecute_cpu(struct cpu_4004*);
 
-int attach_rom(struct cpu_4004*, struct rom_4001*, int id);
+int attach_rom(struct cpu_4004*, struct memory_node*, int id);
 
 #define get_reg(r) (r & 1) ? (cpu->regp[r >> 1] & 15) : ((cpu->regp[r >> 1] & (15 << 4)) >> 4)
 #define set_reg(r, v) cpu->regp[r >> 1] = (r & 1) ? ((cpu->regp[r >> 1] & 0xf0) | v) : ((cpu->regp[r >> 1] & 0x0f) | (v << 4))

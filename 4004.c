@@ -20,7 +20,7 @@ void reset_cpu(struct cpu_4004* cpu)
 }
 
 void destroy_cpu(struct cpu_4004* cpu)
-{
+{	
 	free(cpu);
 }
 
@@ -33,11 +33,8 @@ void print_cpu_info(struct cpu_4004* cpu)
 	printf("\n\n");
 }
 
-int attach_rom(struct cpu_4004* cpu, struct rom_4001* rom, int id)
+int attach_rom(struct cpu_4004* cpu, struct memory_node* node, int id)
 {
-	struct rom_node* node = malloc(sizeof(struct rom_node));
-
-	node->rom = rom;
 	node->id = id;
 
 	node->next = NULL;
@@ -50,11 +47,8 @@ int attach_rom(struct cpu_4004* cpu, struct rom_4001* rom, int id)
 
 }
 
-int attach_ram(struct cpu_4004* cpu, struct ram_4002* ram, int id)
+int attach_ram(struct cpu_4004* cpu, struct memory_node* node, int id)
 {
-	struct ram_node* node = malloc(sizeof(struct ram_node));
-
-	node->ram = ram;
 	node->id = id;
 
 	node->next = NULL;
@@ -71,60 +65,68 @@ unsigned char read_rom(struct cpu_4004* cpu, unsigned short addr)
 {
 	int id = (addr & 0xf00) >> 8;
 
-	struct rom_node* node = cpu->rom_list;
+	struct memory_node* node = cpu->rom_list;
 	while (node->id != id) {
 		node = node->next;
 	}
 
-	return node->rom->data[addr&0xff];
+	return node->read(cpu, node->device, addr);
 }
 
 unsigned char read_ram(struct cpu_4004* cpu, unsigned short addr)
 {
 	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
 
-	struct ram_node* node = cpu->ram_list;
+	struct memory_node* node = cpu->ram_list;
 	while (node->id != id) {
 		node = node->next;
 	}
 
-	return node->ram->data[(addr & 0x30) >> 4][addr & 0xf];
+	return node->read(cpu, node->device, addr);
+	// return node->ram->data[(addr & 0x30) >> 4][addr & 0xf];
 }
 
 void write_ram(struct cpu_4004* cpu, unsigned short addr, unsigned char val)
 {
 	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
 
-	struct ram_node* node = cpu->ram_list;
+	struct memory_node* node = cpu->ram_list;
 	while (node->id != id) {
 		node = node->next;
 	}
 
-	node->ram->data[(addr & 0x30) >> 4][addr & 0xf] = val;
+	node->write(cpu, node->device, addr, val);
+	//node->ram->data[(addr & 0x30) >> 4][addr & 0xf] = val;
 }
 
 unsigned char read_ram_status(struct cpu_4004* cpu, unsigned short addr, int n)
 {
+	printf(RED "RAM status is unsupported\n" reset);
+	return 0;
+
 	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
 
-	struct ram_node* node = cpu->ram_list;
+	struct memory_node* node = cpu->ram_list;
 	while (node->id != id) {
 		node = node->next;
 	}
 
-	return node->ram->data[(addr & 0x30) >> 4][1 + n + addr & 0xf];
+	//return node->ram->data[(addr & 0x30) >> 4][1 + n + addr & 0xf];
 }
 
 void write_ram_status(struct cpu_4004* cpu, unsigned short addr, int n, unsigned char val)
 {
+	printf(RED "RAM status is unsupported\n" reset);
+	return;
+
 	int id = cpu->cm_ram << 2 | (addr & 0xf0) >> 4;
 
-	struct ram_node* node = cpu->ram_list;
+	struct memory_node* node = cpu->ram_list;
 	while (node->id != id) {
 		node = node->next;
 	}
 
-	node->ram->data[(addr & 0x30) >> 4][1 + n + addr & 0xf] = val;
+	//node->ram->data[(addr & 0x30) >> 4][1 + n + addr & 0xf] = val;
 }
 
 void excecute_cpu(struct cpu_4004* cpu)

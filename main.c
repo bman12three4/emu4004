@@ -10,7 +10,7 @@ int main(void)
 	FILE* program = fopen("subroutinetest.mcs4", "r");
 
 	struct cpu_4004 *cpu = create_cpu();
-	struct rom_4001 *rom = create_rom(program);
+	struct memory_node *rom = create_rom(program);
 
 	attach_rom(cpu, rom, 0);
 
@@ -18,7 +18,5 @@ int main(void)
 		excecute_cpu(cpu);
 		getchar();
 	}
-
-	destroy_rom(rom);
 	destroy_cpu(cpu);
 }
