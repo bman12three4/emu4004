@@ -7,8 +7,10 @@
 
 int main(void)
 {
+	FILE* program = fopen("subroutinetest.mcs4", "r");
+
 	struct cpu_4004 *cpu = create_cpu();
-	struct rom_4001 *rom = create_rom(NULL);
+	struct rom_4001 *rom = create_rom(program);
 
 	attach_rom(cpu, rom, 0);
 

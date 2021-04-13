@@ -1,4 +1,7 @@
 {
 	"editor.insertSpaces": false,
-	"editor.tabSize": 8
+	"editor.tabSize": 8,
+	"files.associations": {
+		"iterator": "c"
+	}
 }

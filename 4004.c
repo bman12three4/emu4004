@@ -26,7 +26,8 @@ void destroy_cpu(struct cpu_4004* cpu)
 
 void print_cpu_info(struct cpu_4004* cpu)
 {
-	printf("A=%X, C=%X, PC=%X, PC1=%X, PC2=%X, PC3=%X\n", cpu->accumulator, cpu->flags, cpu->pc, 0, 0, 0);
+	printf("A=%X, C=%X, PC=%X, S=%X, PC1=%X, PC2=%X, PC3=%X\n", 
+		cpu->accumulator, cpu->flags, cpu->pc, cpu->sp, cpu->stack[0], cpu->stack[1], cpu->stack[2]);
 	for (int i = 0; i < 8; i++)
 		printf("RP%d=%X ", i, cpu->regp[i]);
 	printf("\n\n");
@@ -183,7 +184,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		//unsigned char addrh = opa;
 		// not used since there is only 1 rom right now
 		unsigned char addr = read_rom(cpu, cpu->pc++);
-
+		printf(BLU "Jumping to 0x%X\n" reset, addr);
 		cpu->pc = addr;
 		break;
 	}
@@ -191,6 +192,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		//unsigned char addrh = opa;
 		// not used since there is only 1 rom right now
 		unsigned char addr = read_rom(cpu, cpu->pc++);
+		printf(BLU "Jumping to subroutine at 0x%X\n" reset, addr);
 
 		cpu->stack[cpu->sp++] = cpu->pc;
 		if (cpu->sp > 2)
@@ -243,6 +245,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	case (BBL): {
+		printf(BLU "Returning from subrouting with value 0x%X\n" reset, opa);
 		--cpu->sp;
 		if (cpu->sp > 2)
 			cpu->sp = 2;
