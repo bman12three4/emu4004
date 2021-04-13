@@ -14,6 +14,7 @@ int main(void)
 
 	for (int i = 0; i < 10; i++) {
 		excecute_cpu(cpu);
+		getchar();
 	}
 
 	destroy_rom(rom);

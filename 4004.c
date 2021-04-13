@@ -26,9 +26,9 @@ void destroy_cpu(struct cpu_4004* cpu)
 
 void print_cpu_info(struct cpu_4004* cpu)
 {
-	printf("A=%x, C=%x, PC=%x, PC1=%x, PC2=%x, PC3=%x\n", cpu->accumulator, cpu->flags, cpu->pc, 0, 0, 0);
+	printf("A=%X, C=%X, PC=%X, PC1=%X, PC2=%X, PC3=%X\n", cpu->accumulator, cpu->flags, cpu->pc, 0, 0, 0);
 	for (int i = 0; i < 8; i++)
-		printf("RP%d=%x ", i, cpu->regp[i]);
+		printf("RP%d=%X ", i, cpu->regp[i]);
 	printf("\n\n");
 }
 
@@ -132,7 +132,8 @@ void excecute_cpu(struct cpu_4004* cpu)
 	unsigned char opr = (inst & 0xf0) >> 4;
 	unsigned char opa = inst & 0xf;
 
-	printf("Instruction: %x %s\n", inst, opcode_names[inst]);
+	printf(YEL "Instruction: " reset);
+	printf("%X %s\n", inst, opcode_names[inst]);
 
 	switch (opr){
 	case NOP: {
@@ -142,9 +143,9 @@ void excecute_cpu(struct cpu_4004* cpu)
 		int jump = (((~opa)&8) && (((cpu->accumulator == 0) && opa&4) || ((cpu->flags == 1) && opa&2) || (((~cpu->test)&1) && opa&1)) ||
 		(opa&8) && (((cpu->accumulator != 0) && opa&4) || ((cpu->flags == 0) && opa&2) || ((cpu->test&1) && opa&1)));
 		if (jump){
-			unsigned char addrh = read_rom(cpu, cpu->pc++);
-			unsigned char addrl = read_rom(cpu, cpu->pc++);
-			cpu->pc = (addrh << 4) | addrl;
+			unsigned char addr = read_rom(cpu, cpu->pc++);
+			printf(BLU "Jumping to 0x%X\n" reset, addr);
+			cpu->pc = addr;
 		}
 		break;
 	}
@@ -153,11 +154,12 @@ void excecute_cpu(struct cpu_4004* cpu)
 		case (FIM): {
 			unsigned char reg = opa >> 1;
 			unsigned char data = read_rom(cpu, cpu->pc++);
-
+			printf(BLU "Loading 0x%X into register pair %dp\n" reset, data, reg);
 			cpu->regp[reg] = data;
 			break;
 		}
 		case (SRC): {
+			printf(BLU "Setting IO address to 0x%X\n" reset, cpu->regp[opa >> 1]);
 			cpu->io_addr = cpu->regp[opa >> 1];
 			break;
 		}
@@ -214,6 +216,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 	}
 	case (ADD): {
 		unsigned char regval = get_reg(opa);
+		printf(BLU "Adding accumulator with register %d with value 0x%X\n" reset, opa, regval);
 		cpu->accumulator += regval + (cpu->flags & 1);
 		cpu->flags = ((cpu->accumulator & 0xf0) > 0);
 		cpu->accumulator &= 0xf;
@@ -228,12 +231,14 @@ void excecute_cpu(struct cpu_4004* cpu)
 	}
 	case (LD): {
 		unsigned char regval = get_reg(opa);
+		printf(BLU "Loading accumulator from register %d with value 0x%X\n" reset, opa, regval);
 		cpu->accumulator = regval;
 		break;
 	}
 	case (XCH): {
 		unsigned char regval = get_reg(opa);
 		set_reg(opa, cpu->accumulator);
+		printf(BLU "Exchanging accumulator with register %d. 0x%X <-> 0x%X\n" reset, opa, cpu->accumulator, regval);
 		cpu->accumulator = regval;
 		break;
 	}
@@ -256,15 +261,15 @@ void excecute_cpu(struct cpu_4004* cpu)
 			break;
 		}
 		case (WMP): {
-			printf("WMP: Instruction not supported.\n");
+			printf(RED "WMP: Instruction not supported.\n" reset);
 			break;
 		}
 		case (WRR): {
-			printf("WRR: Instruction not supported.\n");
+			printf(RED "WRR: Instruction not supported.\n" reset);
 			break;
 		}
 		case (WPM): {
-			printf("WPM: Instruction not supported.\n");
+			printf(RED "WPM: Instruction not supported.\n" reset);
 			break;
 		}
 		case (WR0): {
@@ -295,7 +300,7 @@ void excecute_cpu(struct cpu_4004* cpu)
 			break;
 		}
 		case (RDR): {
-			printf("RDR: Instruction not supported.\n");
+			printf(RED "RDR: Instruction not supported.\n" reset);
 			break;
 		}
 		case (ADM): {
@@ -424,7 +429,6 @@ void excecute_cpu(struct cpu_4004* cpu)
 		break;
 	}
 	} // main switch
-
 	print_cpu_info(cpu);
 }
 
