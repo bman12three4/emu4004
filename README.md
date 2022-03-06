@@ -14,4 +14,4 @@ in the memory_node struct in 4004.h. You also need to be sure to add them as a r
 since those are addressed seperately. 
 
 NOTE: ram status characters don't work right now, you can only read the regular data. I want to keep it all
-generic but ram and rom devices might have to be different since the status bytes are addressed differently
+generic but ram and rom devices might have to be different since the status bytes are addressed differently.
